@@ -1,0 +1,1427 @@
+<!DOCTYPE html>
+<html lang="ru">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Календарь задач · Автомониторинг</title>
+<style>
+:root{
+  --bg:#F5F5F7;
+  --panel:#FFFFFF;
+  --panel-2:#FAFAFC;
+  --line:#E5E5EA;
+  --line-strong:#D2D2D7;
+  --text:#1D1D1F;
+  --muted:#86868B;
+  --muted-2:#AEAEB2;
+  --accent:#0071E3;
+  --accent-hover:#0077ED;
+  --accent-soft:#E8F1FD;
+  --high:#FF3B30;
+  --high-soft:#FFF0EF;
+  --med:#FF9500;
+  --med-soft:#FFF6E9;
+  --low:#34C759;
+  --low-soft:#EAFBF0;
+  --radius:20px;
+  --radius-md:14px;
+  --radius-sm:10px;
+  --shadow-sm:0 1px 2px rgba(0,0,0,.04), 0 1px 3px rgba(0,0,0,.03);
+  --shadow:0 4px 20px rgba(0,0,0,.06);
+  --shadow-lg:0 12px 44px rgba(0,0,0,.14);
+}
+*{box-sizing:border-box;-webkit-tap-highlight-color:transparent}
+html,body{margin:0;padding:0}
+body{
+  font-family:-apple-system,BlinkMacSystemFont,'SF Pro Text','SF Pro Display','Segoe UI',Roboto,'Helvetica Neue',Arial,sans-serif;
+  background:var(--bg);
+  color:var(--text);
+  font-size:14px;
+  padding-bottom:60px;
+  -webkit-font-smoothing:antialiased;
+  -moz-osx-font-smoothing:grayscale;
+  letter-spacing:-0.01em;
+}
+button{
+  font-family:inherit;font-size:14px;cursor:pointer;
+  border:1px solid transparent;
+  background:rgba(0,0,0,.05);color:var(--text);
+  padding:9px 18px;border-radius:980px;transition:.22s cubic-bezier(.4,0,.2,1);
+  font-weight:500;letter-spacing:-0.01em;
+}
+button:hover{background:rgba(0,0,0,.08)}
+button:active{transform:scale(.97)}
+button.primary{background:var(--accent);color:#fff;font-weight:600}
+button.primary:hover{background:var(--accent-hover);box-shadow:0 4px 16px rgba(0,113,227,.35)}
+button.danger{color:var(--high);background:var(--high-soft)}
+button.danger:hover{background:#FFE3E0}
+button.ghost{background:transparent;color:var(--accent);font-weight:500}
+button.ghost:hover{background:var(--accent-soft)}
+input,select,textarea{
+  font-family:inherit;font-size:14px;padding:11px 14px;
+  border:1px solid var(--line);border-radius:var(--radius-md);
+  background:var(--panel-2);color:var(--text);width:100%;outline:none;
+  transition:.18s cubic-bezier(.4,0,.2,1);font-weight:400;letter-spacing:-0.01em;
+}
+input:hover,select:hover,textarea:hover{background:#fff;border-color:var(--line-strong)}
+input:focus,select:focus,textarea:focus{background:#fff;border-color:var(--accent);box-shadow:0 0 0 4px rgba(0,113,227,.14)}
+textarea{resize:vertical;min-height:64px}
+
+/* ---------- HEADER ---------- */
+.app-header{
+  position:sticky;top:0;z-index:50;
+  background:rgba(245,245,247,.78);
+  backdrop-filter:saturate(180%) blur(20px);
+  -webkit-backdrop-filter:saturate(180%) blur(20px);
+  border-bottom:1px solid rgba(0,0,0,.06);
+  padding:14px 28px;
+  display:flex;align-items:center;gap:18px;flex-wrap:wrap;justify-content:space-between;
+}
+.brand{display:flex;align-items:center;gap:14px}
+.logo{
+  width:42px;height:42px;border-radius:12px;
+  background:linear-gradient(145deg,#1D1D1F,#000);
+  display:grid;place-items:center;
+  font-weight:700;letter-spacing:-0.02em;font-size:15px;
+  color:#fff;box-shadow:0 4px 12px rgba(0,0,0,.18);
+}
+.brand h1{font-size:17px;margin:0;font-weight:600;letter-spacing:-0.022em}
+.brand .sub{font-size:12px;color:var(--muted);margin-top:2px;font-weight:400;letter-spacing:-0.01em}
+.header-actions{display:flex;gap:8px;flex-wrap:wrap;align-items:center}
+.header-actions button{background:rgba(0,0,0,.05)}
+.header-actions button.primary{background:var(--accent);color:#fff}
+.header-actions button.primary:hover{background:var(--accent-hover);box-shadow:0 4px 16px rgba(0,113,227,.4)}
+
+/* ---------- WRAP ---------- */
+.wrap{padding:24px 28px;display:flex;flex-direction:column;gap:18px;max-width:1600px;margin:0 auto}
+.panel{
+  background:var(--panel);border-radius:var(--radius);
+  box-shadow:var(--shadow-sm);padding:20px 22px;
+}
+.panel-head{display:flex;align-items:center;gap:14px;flex-wrap:wrap;margin-bottom:16px}
+.panel-head h2{
+  font-size:12px;margin:0;font-weight:600;letter-spacing:.06em;
+  text-transform:uppercase;color:var(--muted);
+}
+.spacer{flex:1}
+
+/* ---------- TOOLBAR ---------- */
+.toolbar{display:flex;gap:14px;align-items:center;flex-wrap:wrap}
+.view-switch{
+  display:flex;background:rgba(0,0,0,.05);border-radius:12px;padding:3px;gap:2px;
+}
+.view-switch button{
+  border:none;background:transparent;padding:7px 16px;border-radius:9px;
+  font-weight:500;color:var(--muted);font-size:13px;
+}
+.view-switch button:hover{background:transparent;color:var(--text)}
+.view-switch button.active{
+  background:#fff;color:var(--text);font-weight:600;
+  box-shadow:0 1px 3px rgba(0,0,0,.08),0 2px 8px rgba(0,0,0,.04);
+}
+.nav{display:flex;align-items:center;gap:4px}
+.nav #rangeLabel{
+  font-weight:600;font-size:15px;min-width:180px;text-align:center;
+  color:var(--text);letter-spacing:-0.02em;
+}
+.nav button{
+  padding:7px 13px;background:transparent;font-size:14px;color:var(--text);
+}
+.nav button:hover{background:rgba(0,0,0,.06)}
+#customRange{display:flex;align-items:center;gap:8px}
+#customRange input{width:150px;padding:8px 12px}
+.hidden{display:none !important}
+
+/* ---------- ASSETS ---------- */
+.assets-grid{display:grid;grid-template-columns:repeat(auto-fill,minmax(230px,1fr));gap:14px}
+.asset-card{
+  border:1px solid var(--line);border-radius:var(--radius-md);padding:16px;
+  background:var(--panel-2);transition:.25s cubic-bezier(.4,0,.2,1);
+  position:relative;
+}
+.asset-card:hover{
+  background:#fff;border-color:var(--line-strong);
+  box-shadow:0 6px 24px rgba(0,0,0,.07);
+  transform:translateY(-1px);
+}
+.asset-name{
+  display:flex;align-items:center;justify-content:space-between;gap:6px;
+  font-weight:600;font-size:14px;margin-bottom:12px;letter-spacing:-0.015em;
+}
+.asset-name .del{
+  border:none;background:transparent;color:var(--muted-2);
+  font-size:18px;padding:0 4px;line-height:1;border-radius:6px;
+  transition:.15s;
+}
+.asset-name .del:hover{color:var(--high);background:var(--high-soft)}
+.asset-row{display:flex;align-items:center;gap:10px;margin-bottom:8px}
+.asset-row label{font-size:12px;color:var(--muted);flex:1;line-height:1.2;font-weight:400;letter-spacing:-0.005em}
+.asset-row input{
+  width:80px;padding:7px 10px;font-size:13px;text-align:right;font-weight:600;
+  background:#fff;letter-spacing:-0.01em;
+}
+.bar{
+  height:6px;border-radius:3px;background:rgba(0,0,0,.06);
+  overflow:hidden;margin-top:12px;
+}
+.bar span{
+  display:block;height:100%;border-radius:3px;
+  background:linear-gradient(90deg,#0A84FF,#0071E3);
+  transition:width .45s cubic-bezier(.4,0,.2,1);
+}
+.bar span.full{background:linear-gradient(90deg,#34C759,#248A3D)}
+.asset-pct{
+  font-size:12px;color:var(--muted);margin-top:8px;
+  display:flex;justify-content:space-between;font-weight:400;
+}
+.asset-pct b{color:var(--text);font-weight:600;letter-spacing:-0.01em}
+.add-asset{display:flex;gap:10px;align-items:center;margin-top:16px}
+.add-asset input{max-width:300px}
+.total-badge{
+  background:var(--accent-soft);color:var(--accent);
+  font-weight:600;font-size:12px;padding:7px 14px;border-radius:980px;
+  letter-spacing:-0.01em;
+}
+
+/* ---------- FILTERS ---------- */
+.filters{display:flex;gap:10px;flex-wrap:wrap;align-items:center}
+.filters select,.filters input{width:auto;min-width:160px;background:#fff}
+.filters select:hover,.filters input:hover{background:#fff}
+.filters input{min-width:240px}
+
+/* ---------- CALENDAR ---------- */
+.weekdays{display:grid;grid-template-columns:repeat(7,minmax(0,1fr));gap:8px;margin-bottom:10px}
+.weekdays div{
+  text-align:center;font-size:11px;font-weight:600;color:var(--muted);
+  text-transform:uppercase;letter-spacing:.08em;padding:6px 0;
+}
+.weekdays div.we{color:var(--muted-2)}
+.calendar{display:grid;grid-template-columns:repeat(var(--cols,7),minmax(0,1fr));gap:8px}
+.calendar.auto{grid-template-columns:repeat(auto-fill,minmax(185px,1fr))}
+.day{
+  background:var(--panel-2);border:1px solid var(--line);
+  border-radius:var(--radius-md);padding:10px;
+  min-height:122px;display:flex;flex-direction:column;gap:5px;
+  cursor:pointer;transition:.22s cubic-bezier(.4,0,.2,1);
+  position:relative;
+}
+.day:hover{
+  background:#fff;border-color:var(--line-strong);
+  box-shadow:0 4px 18px rgba(0,0,0,.06);
+}
+.day.other{opacity:.4;background:var(--panel-2)}
+.day.today{
+  background:#fff;border-color:var(--accent);
+  box-shadow:0 0 0 2px rgba(0,113,227,.15);
+}
+.day.today .dnum{color:var(--accent)}
+.day.weekend{background:var(--panel-2)}
+.day.weekend.today{background:#fff}
+.day-head{display:flex;align-items:baseline;gap:6px;justify-content:space-between}
+.dnum{font-weight:600;font-size:15px;letter-spacing:-0.02em}
+.day.weekend .dnum{color:var(--muted)}
+.dow{font-size:10px;color:var(--muted-2);text-transform:capitalize;font-weight:500}
+.day-tasks{display:flex;flex-direction:column;gap:4px;flex:1}
+.task{
+  font-size:11.5px;border-radius:9px;padding:5px 8px;
+  background:#fff;border:1px solid var(--line);
+  cursor:pointer;line-height:1.28;position:relative;
+  transition:.18s cubic-bezier(.4,0,.2,1);
+  border-left:3px solid var(--low);
+}
+.task:hover{
+  transform:translateY(-1px);
+  box-shadow:0 3px 10px rgba(0,0,0,.08);
+  border-color:var(--line-strong);
+}
+.task.p-high{border-left-color:var(--high);background:var(--high-soft)}
+.task.p-medium{border-left-color:var(--med);background:var(--med-soft)}
+.task.p-low{border-left-color:var(--low);background:var(--low-soft)}
+.task.done{opacity:.55}
+.task.done .t-title{text-decoration:line-through;color:var(--muted)}
+.t-title{font-weight:600;display:block;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;letter-spacing:-0.01em}
+.t-meta{
+  display:flex;justify-content:space-between;gap:4px;
+  font-size:10px;color:var(--muted);margin-top:3px;font-weight:400;
+}
+.t-bar{height:3px;border-radius:3px;background:rgba(0,0,0,.07);margin-top:5px;overflow:hidden}
+.t-bar i{display:block;height:100%;background:var(--accent);border-radius:3px;transition:width .35s}
+.task.done .t-bar i{background:var(--low)}
+.t-check{font-size:10px;font-weight:700;color:var(--accent)}
+.task.done .t-check{color:var(--low)}
+.day-add{
+  border:none;background:transparent;color:var(--muted-2);
+  font-size:16px;padding:0;align-self:flex-start;line-height:1;
+  margin-top:auto;border-radius:6px;transition:.15s;
+  width:20px;height:20px;display:grid;place-items:center;
+}
+.day-add:hover{color:var(--accent);background:var(--accent-soft);border:none}
+
+/* ---------- STATS ---------- */
+.stats{display:grid;grid-template-columns:repeat(auto-fit,minmax(180px,1fr));gap:14px}
+.stat{
+  background:var(--panel-2);border:1px solid var(--line);
+  border-radius:var(--radius-md);padding:16px 18px;
+  transition:.22s cubic-bezier(.4,0,.2,1);
+}
+.stat:hover{background:#fff;border-color:var(--line-strong);box-shadow:var(--shadow)}
+.stat .k{
+  font-size:11px;color:var(--muted);
+  text-transform:uppercase;letter-spacing:.06em;font-weight:600;
+}
+.stat .v{font-size:26px;font-weight:600;margin-top:6px;letter-spacing:-0.03em}
+.stat .v small{font-size:13px;font-weight:500;color:var(--muted);letter-spacing:-0.01em}
+.legend{
+  display:flex;gap:18px;flex-wrap:wrap;font-size:12.5px;
+  color:var(--muted);align-items:center;font-weight:400;
+}
+.legend i{
+  display:inline-block;width:9px;height:9px;border-radius:50%;
+  margin-right:6px;vertical-align:middle;
+}
+
+/* ---------- MODAL ---------- */
+.modal-overlay{
+  position:fixed;inset:0;background:rgba(0,0,0,.4);
+  display:none;align-items:center;justify-content:center;
+  z-index:100;padding:16px;
+  backdrop-filter:blur(8px);-webkit-backdrop-filter:blur(8px);
+}
+.modal-overlay.open{display:flex}
+.modal{
+  background:#fff;border-radius:24px;padding:28px;width:min(580px,100%);
+  max-height:92vh;overflow:auto;
+  box-shadow:0 24px 80px rgba(0,0,0,.35);
+  animation:pop .24s cubic-bezier(.4,0,.2,1);
+}
+@keyframes pop{from{transform:scale(.94);opacity:0}to{transform:scale(1);opacity:1}}
+.modal h3{
+  margin:0 0 20px;font-size:22px;font-weight:600;letter-spacing:-0.03em;
+}
+.modal label{
+  display:block;margin-bottom:16px;font-size:12px;font-weight:600;
+  color:var(--muted);letter-spacing:.02em;text-transform:uppercase;
+}
+.modal label input,.modal label select,.modal label textarea{
+  margin-top:7px;font-weight:400;color:var(--text);
+  text-transform:none;letter-spacing:-0.01em;font-size:14px;
+}
+.grid2{display:grid;grid-template-columns:1fr 1fr;gap:14px}
+.check{
+  display:flex;align-items:center;gap:12px;font-size:14px;color:var(--text);
+  font-weight:500;background:var(--panel-2);padding:14px 16px;
+  border-radius:var(--radius-md);margin-bottom:16px;cursor:pointer;
+  border:1px solid var(--line);transition:.15s;text-transform:none;letter-spacing:-0.01em;
+}
+.check:hover{background:#fff;border-color:var(--line-strong)}
+.check input{width:20px;height:20px;margin:0;accent-color:var(--accent)}
+.range-row{display:flex;align-items:center;gap:14px;margin-top:8px}
+.range-row input[type=range]{
+  flex:1;padding:0;border:none;background:transparent;box-shadow:none;
+  accent-color:var(--accent);height:4px;cursor:pointer;
+}
+.range-row output{
+  font-weight:600;font-size:16px;min-width:56px;text-align:right;
+  color:var(--accent);letter-spacing:-0.02em;
+}
+.modal-actions{
+  display:flex;gap:10px;margin-top:22px;align-items:center;
+  padding-top:20px;border-top:1px solid var(--line);
+}
+
+@media(max-width:820px){
+  .grid2{grid-template-columns:1fr}
+  .nav #rangeLabel{min-width:auto;font-size:13px}
+  .calendar{grid-template-columns:repeat(var(--cols,7),minmax(90px,1fr))}
+  .wrap{padding:16px}
+  .calendar-panel{overflow-x:auto}
+  .app-header{padding:12px 16px}
+  .brand .sub{display:none}
+}
+</style>
+</head>
+<body>
+
+<header class="app-header">
+  <div class="brand">
+    <div class="logo">АМ</div>
+    <div>
+      <h1>Календарь задач</h1>
+      <div class="sub">Автомониторинг · Договоры и активы · <span id="syncStatus">подключение…</span></div>
+    </div>
+  </div>
+  <div class="header-actions">
+    <button id="btnExport">Экспорт</button>
+    <button id="btnImport">Импорт</button>
+    <input type="file" id="fileImport" accept=".json" hidden>
+    <button id="btnAddTask" class="primary">+ Новая задача</button>
+  </div>
+</header>
+
+<div class="wrap">
+
+  <!-- TOOLBAR -->
+  <section class="panel toolbar">
+    <div class="view-switch" id="viewSwitch">
+      <button data-view="month">Месяц</button>
+      <button data-view="week">Неделя</button>
+      <button data-view="2weeks">2 недели</button>
+      <button data-view="custom">Период</button>
+    </div>
+    <div class="nav">
+      <button id="btnPrev">‹</button>
+      <button id="btnToday">Сегодня</button>
+      <button id="btnNext">›</button>
+      <span id="rangeLabel"></span>
+    </div>
+    <div id="customRange" class="hidden">
+      <input type="date" id="dateFrom">
+      <span style="color:var(--muted)">—</span>
+      <input type="date" id="dateTo">
+    </div>
+    <div class="spacer"></div>
+    <div class="legend">
+      <span><i style="background:#FF3B30"></i>Высокий</span>
+      <span><i style="background:#FF9500"></i>Средний</span>
+      <span><i style="background:#34C759"></i>Низкий</span>
+      <span><i style="background:#0071E3"></i>Прогресс</span>
+    </div>
+  </section>
+
+  <!-- ASSETS -->
+  <section class="panel">
+    <div class="panel-head">
+      <h2>Активы и договоры</h2>
+      <span class="total-badge" id="assetsTotal">—</span>
+      <div class="spacer"></div>
+      <button id="btnAddAsset" class="ghost">+ Добавить актив</button>
+    </div>
+    <div class="assets-grid" id="assetsGrid"></div>
+    <div class="add-asset hidden" id="addAssetBox">
+      <input id="newAssetName" placeholder="Название нового актива">
+      <button class="primary" id="btnSaveAsset">Добавить</button>
+      <button id="btnCancelAsset">Отмена</button>
+    </div>
+  </section>
+
+  <!-- FILTERS -->
+  <section class="panel filters">
+    <select id="filterAsset"><option value="">Все активы</option></select>
+    <select id="filterPriority">
+      <option value="">Все приоритеты</option>
+      <option value="high">Высокий</option>
+      <option value="medium">Средний</option>
+      <option value="low">Низкий</option>
+    </select>
+    <select id="filterStatus">
+      <option value="">Все статусы</option>
+      <option value="open">Не выполнено</option>
+      <option value="done">Выполнено</option>
+    </select>
+    <input id="filterSearch" placeholder="Поиск по задачам, ответственным…">
+    <div class="spacer"></div>
+    <button class="ghost" id="btnResetFilters">Сбросить</button>
+  </section>
+
+  <!-- CALENDAR -->
+  <section class="panel calendar-panel">
+    <div class="weekdays" id="weekdays"></div>
+    <div class="calendar" id="calendar"></div>
+  </section>
+
+  <!-- STATS -->
+  <section class="panel">
+    <div class="panel-head"><h2>Статистика за период</h2></div>
+    <div class="stats" id="stats"></div>
+  </section>
+
+</div>
+
+<!-- MODAL -->
+<div class="modal-overlay" id="modal">
+  <div class="modal">
+    <h3 id="modalTitle">Новая задача</h3>
+    <form id="taskForm">
+      <input type="hidden" id="taskId">
+      <label>Название задачи
+        <input id="fTitle" required placeholder="Например: Обзвон по договорам недвижимости">
+      </label>
+      <div class="grid2">
+        <label>Актив
+          <select id="fAsset"></select>
+        </label>
+        <label>Дата
+          <input type="date" id="fDate" required>
+        </label>
+      </div>
+      <div class="grid2">
+        <label>Приоритет
+          <select id="fPriority">
+            <option value="high">Высокий</option>
+            <option value="medium">Средний</option>
+            <option value="low">Низкий</option>
+          </select>
+        </label>
+        <label>Ответственный
+          <input id="fAssignee" placeholder="ФИО">
+        </label>
+      </div>
+      <div class="grid2">
+        <label>Договоров всего
+          <input type="number" id="fTotal" min="0" value="0">
+        </label>
+        <label>Осталось отработать
+          <input type="number" id="fRemaining" min="0" value="0">
+        </label>
+      </div>
+      <label>% выполнения
+        <div class="range-row">
+          <input type="range" id="fPercent" min="0" max="100" value="0">
+          <output id="fPercentOut">0%</output>
+        </div>
+      </label>
+      <label class="check"><input type="checkbox" id="fDone"> Задача выполнена</label>
+      <label>Комментарий
+        <textarea id="fDesc" placeholder="Детали, договоры, контакты…"></textarea>
+      </label>
+      <div class="modal-actions">
+        <button type="button" class="danger" id="btnDeleteTask">Удалить</button>
+        <div class="spacer"></div>
+        <button type="button" id="btnCancel">Отмена</button>
+        <button type="submit" class="primary">Сохранить</button>
+      </div>
+    </form>
+  </div>
+</div>
+
+<script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2.49.1/dist/umd/supabase.min.js"></script>
+<script src="supabase-config.js"></script>
+<script>
+/* =========================================================
+   ДАННЫЕ
+   ========================================================= */
+const STORAGE_KEY = 'am_calendar_v2';
+const DEFAULT_ASSETS = [
+  'Недвижимость',
+  'Оборудование',
+  'Автотранспорт и Спецтехника',
+  'Промышленная Недвижимость',
+  'Сельскохозяйственная Недвижимость',
+  'Земельные участки',
+  'ДвУК',
+  'СХЖ',
+  'Подвижной состав'
+];
+
+const MONTHS      = ['Январь','Февраль','Март','Апрель','Май','Июнь','Июль','Август','Сентябрь','Октябрь','Ноябрь','Декабрь'];
+const MONTHS_GEN  = ['января','февраля','марта','апреля','мая','июня','июля','августа','сентября','октября','ноября','декабря'];
+const DOW_SHORT   = ['Пн','Вт','Ср','Чт','Пт','Сб','Вс'];
+
+/* ---------- утилиты дат ---------- */
+const pad = n => String(n).padStart(2,'0');
+const isoDate = d => `${d.getFullYear()}-${pad(d.getMonth()+1)}-${pad(d.getDate())}`;
+const parseDate = s => { const [y,m,d] = s.split('-').map(Number); return new Date(y, m-1, d); };
+const addDays = (d,n) => { const x = new Date(d.getFullYear(), d.getMonth(), d.getDate()); x.setDate(x.getDate()+n); return x; };
+const startOfWeek = d => { const x = new Date(d.getFullYear(), d.getMonth(), d.getDate()); const w = (x.getDay()+6)%7; x.setDate(x.getDate()-w); return x; };
+const todayStr = () => isoDate(new Date());
+const uid = () => 'x' + Math.random().toString(36).slice(2,9) + Date.now().toString(36).slice(-4);
+
+/* ---------- состояние ---------- */
+const API_URL = '/api/data';
+const POLL_MS = 3000;
+const UI_KEY = STORAGE_KEY + '_ui';
+const CALENDAR_ROW_ID = 'main';
+
+function defaultState(){
+  const t = new Date();
+  return {
+    assets: DEFAULT_ASSETS.map(n => ({ id: uid(), name: n, total: 0, remaining: 0 })),
+    tasks: [],
+    ui: {
+      view: 'month',
+      anchor: todayStr(),
+      customFrom: isoDate(startOfWeek(t)),
+      customTo: isoDate(addDays(startOfWeek(t), 13)),
+      filters: { asset:'', priority:'', status:'', search:'' }
+    }
+  };
+}
+
+function asArray(v){
+  if(Array.isArray(v)) return v;
+  if(v && typeof v === 'object') return Object.values(v);
+  return [];
+}
+
+function coerceRemote(remote){
+  if(!remote) return null;
+  return {
+    assets: asArray(remote.assets),
+    tasks: asArray(remote.tasks),
+    ui: remote.ui || null
+  };
+}
+
+function normalizeState(s){
+  s = coerceRemote(s) || s;
+  if(!s || !Array.isArray(s.assets) || !Array.isArray(s.tasks)) return null;
+  const d = defaultState();
+  const ui = Object.assign({}, d.ui, s.ui || {});
+  ui.filters = Object.assign({}, d.ui.filters, (s.ui && s.ui.filters) || {});
+  return { assets: s.assets, tasks: s.tasks, ui };
+}
+
+function loadLocalBackup(){
+  try{
+    const raw = localStorage.getItem(STORAGE_KEY);
+    if(!raw) return null;
+    return normalizeState(JSON.parse(raw));
+  }catch(e){ return null; }
+}
+
+function loadLocalUi(){
+  try{
+    const raw = localStorage.getItem(UI_KEY);
+    if(!raw) return null;
+    return JSON.parse(raw);
+  }catch(e){ return null; }
+}
+
+function applyLocalUi(s){
+  const localUi = loadLocalUi();
+  if(!localUi) return s;
+  s.ui = Object.assign({}, s.ui, localUi);
+  s.ui.filters = Object.assign({}, s.ui.filters, localUi.filters || {});
+  return s;
+}
+
+function sharedSnapshot(s){
+  return JSON.stringify({ assets: s.assets, tasks: s.tasks });
+}
+
+function isEmptyShared(s){
+  return !s || ((!s.assets || !s.assets.length) && (!s.tasks || !s.tasks.length));
+}
+
+function isSupabaseConfigured(){
+  const c = window.SUPABASE_CONFIG;
+  if(!c || !c.url || !c.anonKey) return false;
+  return !String(c.url).includes('YOUR_') && !String(c.anonKey).includes('YOUR_');
+}
+
+let state = defaultState();
+let editingId = null;
+let lastShared = '';
+let saveTimer = null;
+let saving = false;
+let applyingRemote = false;
+let syncMode = 'local'; // 'supabase' | 'local'
+let supabaseClient = null;
+
+function setSyncStatus(mode){
+  const el = document.getElementById('syncStatus');
+  if(!el) return;
+  const map = {
+    connecting: 'подключение…',
+    ok: syncMode === 'supabase' ? 'Supabase · онлайн' : 'общий · онлайн',
+    saving: 'сохранение…',
+    syncing: 'обновление…',
+    offline: 'нет связи',
+    error: 'ошибка синхронизации',
+    setup: 'укажите supabase-config.js'
+  };
+  el.textContent = map[mode] || mode;
+  el.style.color = (mode === 'error' || mode === 'offline' || mode === 'setup') ? 'var(--high)' : 'var(--muted)';
+}
+
+function persistLocal(){
+  try{
+    localStorage.setItem(STORAGE_KEY, JSON.stringify(state));
+    localStorage.setItem(UI_KEY, JSON.stringify(state.ui));
+  }catch(e){ console.warn('Не удалось сохранить локально', e); }
+}
+
+function applyRemoteShared(remote){
+  remote = coerceRemote(remote);
+  if(!remote || !Array.isArray(remote.assets) || !Array.isArray(remote.tasks)) return false;
+  const snap = sharedSnapshot(remote);
+  if(snap === lastShared) return false;
+  applyingRemote = true;
+  setSyncStatus('syncing');
+  const keepUi = state.ui;
+  state.assets = remote.assets;
+  state.tasks = remote.tasks;
+  state.ui = keepUi;
+  lastShared = snap;
+  persistLocal();
+  renderAll();
+  setSyncStatus('ok');
+  applyingRemote = false;
+  return true;
+}
+
+async function pushToSupabase(){
+  const snap = sharedSnapshot(state);
+  if(snap === lastShared) return;
+  const { error } = await supabaseClient
+    .from('calendar')
+    .upsert({
+      id: CALENDAR_ROW_ID,
+      assets: state.assets,
+      tasks: state.tasks,
+      updated_at: new Date().toISOString()
+    });
+  if(error) throw error;
+  lastShared = snap;
+}
+
+async function pushToLocalApi(){
+  const snap = sharedSnapshot(state);
+  if(snap === lastShared) return;
+  const res = await fetch(API_URL, {
+    method: 'POST',
+    headers: { 'Content-Type': 'application/json' },
+    body: JSON.stringify({ assets: state.assets, tasks: state.tasks, ui: state.ui })
+  });
+  if(!res.ok) throw new Error('save failed');
+  lastShared = snap;
+}
+
+async function pushShared(){
+  if(syncMode === 'supabase') return pushToSupabase();
+  return pushToLocalApi();
+}
+
+function save(){
+  persistLocal();
+  if(applyingRemote) return;
+  clearTimeout(saveTimer);
+  saveTimer = setTimeout(async () => {
+    try{
+      saving = true;
+      setSyncStatus('saving');
+      await pushShared();
+      setSyncStatus('ok');
+    }catch(e){
+      console.warn(e);
+      setSyncStatus('error');
+    }finally{
+      saving = false;
+    }
+  }, 350);
+}
+
+async function pullFromLocalApi(){
+  if(saving || applyingRemote || document.hidden) return;
+  try{
+    const res = await fetch(API_URL, { cache: 'no-store' });
+    if(!res.ok) throw new Error('load failed');
+    applyRemoteShared(await res.json());
+    setSyncStatus('ok');
+  }catch(e){
+    setSyncStatus('error');
+  }
+}
+
+async function fetchSupabaseRow(){
+  const { data, error } = await supabaseClient
+    .from('calendar')
+    .select('assets,tasks')
+    .eq('id', CALENDAR_ROW_ID)
+    .maybeSingle();
+  if(error) throw error;
+  return coerceRemote(data);
+}
+
+async function bootSupabase(){
+  const { createClient } = supabase;
+  supabaseClient = createClient(window.SUPABASE_CONFIG.url, window.SUPABASE_CONFIG.anonKey);
+  syncMode = 'supabase';
+
+  let remote = null;
+  try{
+    remote = await fetchSupabaseRow();
+  }catch(e){
+    console.warn('Таблица calendar ещё не готова?', e);
+    throw e;
+  }
+
+  const local = loadLocalBackup();
+  if(isEmptyShared(remote) && local && !isEmptyShared(local)){
+    state = applyLocalUi(local);
+    await pushToSupabase();
+  } else if(isEmptyShared(remote)){
+    state = applyLocalUi(defaultState());
+    await pushToSupabase();
+  } else {
+    state = applyLocalUi(normalizeState(remote) || defaultState());
+    lastShared = sharedSnapshot(state);
+  }
+  persistLocal();
+  renderAll();
+  setSyncStatus('ok');
+
+  supabaseClient
+    .channel('calendar-sync')
+    .on('postgres_changes', {
+      event: '*',
+      schema: 'public',
+      table: 'calendar',
+      filter: `id=eq.${CALENDAR_ROW_ID}`
+    }, payload => {
+      if(saving || applyingRemote) return;
+      const row = payload.new || payload.old;
+      if(row) applyRemoteShared(row);
+    })
+    .subscribe();
+
+  // запасной опрос, если realtime ещё не включён
+  setInterval(async () => {
+    if(saving || applyingRemote || document.hidden) return;
+    try{
+      applyRemoteShared(await fetchSupabaseRow());
+    }catch(e){ /* ignore */ }
+  }, POLL_MS);
+}
+
+async function bootLocalApi(){
+  syncMode = 'local';
+  const res = await fetch(API_URL, { cache: 'no-store' });
+  if(!res.ok) throw new Error('load failed');
+  const remote = await res.json();
+  const local = loadLocalBackup();
+
+  if(isEmptyShared(remote) && local && !isEmptyShared(local)){
+    state = applyLocalUi(local);
+    await pushToLocalApi();
+  } else if(isEmptyShared(remote)){
+    state = applyLocalUi(defaultState());
+    await pushToLocalApi();
+  } else {
+    state = applyLocalUi(normalizeState(remote) || defaultState());
+    lastShared = sharedSnapshot(state);
+  }
+  persistLocal();
+  renderAll();
+  setSyncStatus('ok');
+  setInterval(pullFromLocalApi, POLL_MS);
+  document.addEventListener('visibilitychange', () => {
+    if(!document.hidden) pullFromLocalApi();
+  });
+}
+
+async function boot(){
+  setSyncStatus('connecting');
+  try{
+    if(isSupabaseConfigured()){
+      await bootSupabase();
+      return;
+    }
+    await bootLocalApi();
+  }catch(e){
+    console.warn('Синхронизация недоступна, локальный режим', e);
+    state = applyLocalUi(loadLocalBackup() || defaultState());
+    lastShared = sharedSnapshot(state);
+    renderAll();
+    if(!isSupabaseConfigured()) setSyncStatus('setup');
+    else setSyncStatus('offline');
+  }
+}
+
+/* =========================================================
+   DOM
+   ========================================================= */
+const $ = id => document.getElementById(id);
+const calendarEl   = $('calendar');
+const weekdaysEl   = $('weekdays');
+const assetsGrid   = $('assetsGrid');
+const statsEl      = $('stats');
+const rangeLabel   = $('rangeLabel');
+const modal        = $('modal');
+
+/* =========================================================
+   АКТИВЫ
+   ========================================================= */
+function assetById(id){ return state.assets.find(a => a.id === id); }
+function assetName(id){ const a = assetById(id); return a ? a.name : '—'; }
+
+function renderAssets(){
+  assetsGrid.innerHTML = '';
+  if(state.assets.length === 0){
+    assetsGrid.innerHTML = '<div style="color:var(--muted);font-size:13px;padding:8px">Активов пока нет. Нажмите «Добавить актив».</div>';
+  }
+  state.assets.forEach(a => {
+    const total = +a.total || 0;
+    const rem   = Math.max(0, Math.min(total, +a.remaining || 0));
+    const pct   = total > 0 ? Math.round((total - rem) / total * 100) : 0;
+
+    const card = document.createElement('div');
+    card.className = 'asset-card';
+    card.dataset.id = a.id;
+    card.innerHTML = `
+      <div class="asset-name">
+        <span>${escapeHtml(a.name)}</span>
+        <button class="del" data-del="${a.id}" title="Удалить актив">×</button>
+      </div>
+      <div class="asset-row">
+        <label>Договоров всего</label>
+        <input type="number" min="0" data-field="total" value="${total}">
+      </div>
+      <div class="asset-row">
+        <label>Осталось отработать</label>
+        <input type="number" min="0" data-field="remaining" value="${rem}">
+      </div>
+      <div class="bar"><span class="${pct===100?'full':''}" style="width:${pct}%"></span></div>
+      <div class="asset-pct"><span>Отработано</span><b>${pct}%</b></div>
+    `;
+    assetsGrid.appendChild(card);
+  });
+
+  const tt = state.assets.reduce((s,a)=>s + (+a.total||0), 0);
+  const tr = state.assets.reduce((s,a)=>s + Math.max(0, Math.min(+a.total||0, +a.remaining||0)), 0);
+  const tp = tt > 0 ? Math.round((tt-tr)/tt*100) : 0;
+  $('assetsTotal').textContent = `${tt} всего · ${tr} осталось · ${tp}%`;
+}
+
+function updateAssetVisual(card){
+  const a = assetById(card.dataset.id);
+  if(!a) return;
+  const total = +a.total || 0;
+  const rem   = Math.max(0, Math.min(total, +a.remaining || 0));
+  const pct   = total > 0 ? Math.round((total - rem) / total * 100) : 0;
+  const bar = card.querySelector('.bar span');
+  bar.style.width = pct + '%';
+  bar.className = pct === 100 ? 'full' : '';
+  card.querySelector('.asset-pct b').textContent = pct + '%';
+
+  const tt = state.assets.reduce((s,x)=>s + (+x.total||0), 0);
+  const tr = state.assets.reduce((s,x)=>s + Math.max(0, Math.min(+x.total||0, +x.remaining||0)), 0);
+  const tp = tt > 0 ? Math.round((tt-tr)/tt*100) : 0;
+  $('assetsTotal').textContent = `${tt} всего · ${tr} осталось · ${tp}%`;
+}
+
+assetsGrid.addEventListener('input', e => {
+  const input = e.target.closest('input[data-field]');
+  if(!input) return;
+  const card = input.closest('.asset-card');
+  const a = assetById(card.dataset.id);
+  if(!a) return;
+  const v = Math.max(0, parseInt(input.value, 10) || 0);
+  a[input.dataset.field] = v;
+  if(input.dataset.field === 'total' && a.remaining > v) a.remaining = v;
+  save();
+  updateAssetVisual(card);
+});
+
+assetsGrid.addEventListener('click', e => {
+  const del = e.target.closest('[data-del]');
+  if(!del) return;
+  const id = del.dataset.del;
+  const a = assetById(id);
+  if(!a) return;
+  const used = state.tasks.some(t => t.assetId === id);
+  if(!confirm(`Удалить актив «${a.name}»?${used ? '\nВнимание: к нему привязаны задачи.' : ''}`)) return;
+  state.assets = state.assets.filter(x => x.id !== id);
+  save();
+  renderAll();
+});
+
+$('btnAddAsset').onclick = () => {
+  const box = $('addAssetBox');
+  box.classList.toggle('hidden');
+  if(!box.classList.contains('hidden')) $('newAssetName').focus();
+};
+$('btnCancelAsset').onclick = () => {
+  $('addAssetBox').classList.add('hidden');
+  $('newAssetName').value = '';
+};
+$('btnSaveAsset').onclick = () => {
+  const name = $('newAssetName').value.trim();
+  if(!name) return;
+  state.assets.push({ id: uid(), name, total: 0, remaining: 0 });
+  $('newAssetName').value = '';
+  $('addAssetBox').classList.add('hidden');
+  save();
+  renderAll();
+};
+$('newAssetName').addEventListener('keydown', e => {
+  if(e.key === 'Enter'){ e.preventDefault(); $('btnSaveAsset').click(); }
+});
+
+/* =========================================================
+   ФИЛЬТРЫ
+   ========================================================= */
+function renderFilterOptions(){
+  const sel = $('filterAsset');
+  const cur = state.ui.filters.asset;
+  sel.innerHTML = '<option value="">Все активы</option>' +
+    state.assets.map(a => `<option value="${a.id}">${escapeHtml(a.name)}</option>`).join('');
+  sel.value = cur && assetById(cur) ? cur : '';
+  if(sel.value !== cur) state.ui.filters.asset = sel.value;
+}
+
+function visibleTasks(){
+  const f = state.ui.filters;
+  const q = (f.search || '').toLowerCase().trim();
+  return state.tasks.filter(t => {
+    if(f.asset && t.assetId !== f.asset) return false;
+    if(f.priority && t.priority !== f.priority) return false;
+    if(f.status === 'done' && !t.done) return false;
+    if(f.status === 'open' && t.done) return false;
+    if(q){
+      const hay = `${t.title||''} ${t.assignee||''} ${t.description||''} ${assetName(t.assetId)}`.toLowerCase();
+      if(!hay.includes(q)) return false;
+    }
+    return true;
+  });
+}
+
+$('filterAsset').onchange    = e => { state.ui.filters.asset = e.target.value; save(); renderCalendar(); renderStats(); };
+$('filterPriority').onchange = e => { state.ui.filters.priority = e.target.value; save(); renderCalendar(); renderStats(); };
+$('filterStatus').onchange   = e => { state.ui.filters.status = e.target.value; save(); renderCalendar(); renderStats(); };
+$('filterSearch').oninput    = e => { state.ui.filters.search = e.target.value; renderCalendar(); renderStats(); };
+$('btnResetFilters').onclick = () => {
+  state.ui.filters = { asset:'', priority:'', status:'', search:'' };
+  $('filterAsset').value = ''; $('filterPriority').value = ''; $('filterStatus').value = ''; $('filterSearch').value = '';
+  save(); renderCalendar(); renderStats();
+};
+
+/* =========================================================
+   ВИДИМЫЕ ДНИ
+   ========================================================= */
+function getVisibleDays(){
+  const view = state.ui.view;
+  const anchor = parseDate(state.ui.anchor);
+  const days = [];
+
+  if(view === 'month'){
+    const first = new Date(anchor.getFullYear(), anchor.getMonth(), 1);
+    const last  = new Date(anchor.getFullYear(), anchor.getMonth()+1, 0);
+    const s = startOfWeek(first);
+    const e = addDays(startOfWeek(last), 6);
+    for(let d = new Date(s); d <= e; d = addDays(d,1)) days.push(new Date(d));
+  } else if(view === 'week'){
+    const s = startOfWeek(anchor);
+    for(let i=0;i<7;i++) days.push(addDays(s,i));
+  } else if(view === '2weeks'){
+    const s = startOfWeek(anchor);
+    for(let i=0;i<14;i++) days.push(addDays(s,i));
+  } else {
+    let s = parseDate(state.ui.customFrom);
+    let e = parseDate(state.ui.customTo);
+    if(e < s){ const tmp = s; s = e; e = tmp; }
+    let guard = 0;
+    for(let d = new Date(s); d <= e && guard < 180; d = addDays(d,1), guard++) days.push(new Date(d));
+  }
+  return days;
+}
+
+/* =========================================================
+   КАЛЕНДАРЬ
+   ========================================================= */
+function renderCalendar(){
+  const view = state.ui.view;
+  const days = getVisibleDays();
+  const todayS = todayStr();
+
+  if(view === 'month'){
+    weekdaysEl.classList.remove('hidden');
+    weekdaysEl.innerHTML = DOW_SHORT.map((d,i) =>
+      `<div class="${i>4?'we':''}">${d}</div>`).join('');
+  } else {
+    weekdaysEl.classList.add('hidden');
+    weekdaysEl.innerHTML = '';
+  }
+
+  const cols = (view === 'month' || view === 'week' || view === '2weeks') ? 7 : Math.min(7, days.length || 7);
+  calendarEl.classList.toggle('auto', view === 'custom' && days.length > 7);
+  calendarEl.style.setProperty('--cols', cols);
+
+  const byDate = {};
+  visibleTasks().forEach(t => {
+    (byDate[t.date] = byDate[t.date] || []).push(t);
+  });
+  const prioRank = { high:0, medium:1, low:2 };
+  Object.values(byDate).forEach(arr => arr.sort((a,b) =>
+    (a.done - b.done) || (prioRank[a.priority]-prioRank[b.priority]) || a.title.localeCompare(b.title)
+  ));
+
+  const curMonth = parseDate(state.ui.anchor).getMonth();
+  const curYear  = parseDate(state.ui.anchor).getFullYear();
+
+  calendarEl.innerHTML = '';
+  days.forEach(d => {
+    const ds = isoDate(d);
+    const cell = document.createElement('div');
+    cell.className = 'day';
+    cell.dataset.date = ds;
+
+    if(view === 'month' && (d.getMonth() !== curMonth || d.getFullYear() !== curYear)) cell.classList.add('other');
+    if(ds === todayS) cell.classList.add('today');
+    const wd = d.getDay();
+    if(wd === 0 || wd === 6) cell.classList.add('weekend');
+
+    const dowIdx = (wd + 6) % 7;
+    const headLabel = view === 'month'
+      ? `<span class="dnum">${d.getDate()}</span>`
+      : `<span class="dnum">${d.getDate()}</span><span class="dow">${DOW_SHORT[dowIdx]}, ${MONTHS_GEN[d.getMonth()].slice(0,3)}</span>`;
+
+    const tasksHtml = (byDate[ds] || []).map(t => {
+      const pct = taskPercent(t);
+      const icon = t.done ? '✔' : (pct >= 50 ? '◐' : '○');
+      return `<div class="task p-${t.priority} ${t.done?'done':''}" data-id="${t.id}" title="${escapeHtml(t.title)}">
+        <span class="t-title">${escapeHtml(t.title)}</span>
+        <div class="t-meta">
+          <span>${escapeHtml(assetName(t.assetId))}</span>
+          <span class="t-check">${icon} ${pct}%</span>
+        </div>
+        <div class="t-bar"><i style="width:${pct}%"></i></div>
+      </div>`;
+    }).join('');
+
+    cell.innerHTML = `
+      <div class="day-head">${headLabel}</div>
+      <div class="day-tasks">${tasksHtml}</div>
+      <button class="day-add" title="Добавить задачу">+</button>
+    `;
+    calendarEl.appendChild(cell);
+  });
+
+  updateRangeLabel(days);
+}
+
+function updateRangeLabel(days){
+  const view = state.ui.view;
+  const a = parseDate(state.ui.anchor);
+  if(view === 'month'){
+    rangeLabel.textContent = `${MONTHS[a.getMonth()]} ${a.getFullYear()}`;
+  } else if(days.length){
+    const s = days[0], e = days[days.length-1];
+    if(s.getMonth() === e.getMonth()){
+      rangeLabel.textContent = `${s.getDate()} — ${e.getDate()} ${MONTHS_GEN[s.getMonth()]} ${s.getFullYear()}`;
+    } else if(s.getFullYear() === e.getFullYear()){
+      rangeLabel.textContent = `${s.getDate()} ${MONTHS_GEN[s.getMonth()]} — ${e.getDate()} ${MONTHS_GEN[e.getMonth()]} ${s.getFullYear()}`;
+    } else {
+      rangeLabel.textContent = `${s.getDate()} ${MONTHS_GEN[s.getMonth()]} ${s.getFullYear()} — ${e.getDate()} ${MONTHS_GEN[e.getMonth()]} ${e.getFullYear()}`;
+    }
+  }
+}
+
+/* =========================================================
+   ПРОЦЕНТ ВЫПОЛНЕНИЯ ЗАДАЧИ
+   ========================================================= */
+function taskPercent(t){
+  if(t.done) return 100;
+  const total = +t.contractsTotal || 0;
+  if(total > 0){
+    const rem = Math.max(0, Math.min(total, +t.contractsRemaining || 0));
+    return Math.round((total - rem) / total * 100);
+  }
+  return Math.max(0, Math.min(100, Math.round(+t.percent || 0)));
+}
+
+/* =========================================================
+   НАВИГАЦИЯ
+   ========================================================= */
+function shiftPeriod(dir){
+  const v = state.ui.view;
+  const a = parseDate(state.ui.anchor);
+  if(v === 'month'){
+    state.ui.anchor = isoDate(new Date(a.getFullYear(), a.getMonth()+dir, 1));
+  } else if(v === 'week'){
+    state.ui.anchor = isoDate(addDays(a, 7*dir));
+  } else if(v === '2weeks'){
+    state.ui.anchor = isoDate(addDays(a, 14*dir));
+  } else {
+    const s = parseDate(state.ui.customFrom);
+    const e = parseDate(state.ui.customTo);
+    const len = Math.max(1, Math.round((e - s) / 86400000) + 1);
+    state.ui.customFrom = isoDate(addDays(s, len*dir));
+    state.ui.customTo   = isoDate(addDays(e, len*dir));
+    state.ui.anchor     = state.ui.customFrom;
+  }
+  save();
+  renderCalendar();
+  renderStats();
+}
+
+$('btnPrev').onclick  = () => shiftPeriod(-1);
+$('btnNext').onclick  = () => shiftPeriod(1);
+$('btnToday').onclick = () => {
+  const t = new Date();
+  state.ui.anchor = isoDate(t);
+  state.ui.customFrom = isoDate(startOfWeek(t));
+  state.ui.customTo   = isoDate(addDays(startOfWeek(t), 13));
+  $('dateFrom').value = state.ui.customFrom;
+  $('dateTo').value   = state.ui.customTo;
+  save(); renderCalendar(); renderStats();
+};
+
+$('viewSwitch').addEventListener('click', e => {
+  const btn = e.target.closest('button[data-view]');
+  if(!btn) return;
+  state.ui.view = btn.dataset.view;
+  $('customRange').classList.toggle('hidden', state.ui.view !== 'custom');
+  if(state.ui.view === 'custom'){
+    $('dateFrom').value = state.ui.customFrom;
+    $('dateTo').value   = state.ui.customTo;
+  }
+  save();
+  renderCalendar();
+  renderStats();
+  syncViewButtons();
+});
+
+$('dateFrom').onchange = e => { state.ui.customFrom = e.target.value || state.ui.customFrom; save(); renderCalendar(); renderStats(); };
+$('dateTo').onchange   = e => { state.ui.customTo   = e.target.value || state.ui.customTo;   save(); renderCalendar(); renderStats(); };
+
+function syncViewButtons(){
+  document.querySelectorAll('#viewSwitch button').forEach(b => {
+    b.classList.toggle('active', b.dataset.view === state.ui.view);
+  });
+  $('customRange').classList.toggle('hidden', state.ui.view !== 'custom');
+}
+
+/* =========================================================
+   СТАТИСТИКА
+   ========================================================= */
+function renderStats(){
+  const days = getVisibleDays().map(isoDate);
+  const set = new Set(days);
+  const tasks = visibleTasks().filter(t => set.has(t.date));
+
+  const total = tasks.length;
+  const done  = tasks.filter(t => t.done).length;
+  const open  = total - done;
+  const avg   = total ? Math.round(tasks.reduce((s,t)=>s + taskPercent(t), 0) / total) : 0;
+
+  const cTotal = tasks.reduce((s,t)=>s + (+t.contractsTotal || 0), 0);
+  const cRem   = tasks.reduce((s,t)=>s + Math.max(0, Math.min(+t.contractsTotal||0, +t.contractsRemaining||0)), 0);
+  const cPct   = cTotal > 0 ? Math.round((cTotal - cRem)/cTotal*100) : 0;
+
+  const byPrio = { high:0, medium:0, low:0 };
+  tasks.forEach(t => byPrio[t.priority] = (byPrio[t.priority]||0) + 1);
+
+  statsEl.innerHTML = `
+    <div class="stat"><div class="k">Задач в периоде</div><div class="v">${total}</div></div>
+    <div class="stat"><div class="k">Выполнено</div><div class="v" style="color:var(--low)">${done}<small> / ${total}</small></div></div>
+    <div class="stat"><div class="k">В работе</div><div class="v" style="color:var(--med)">${open}</div></div>
+    <div class="stat"><div class="k">Средний прогресс</div><div class="v" style="color:var(--accent)">${avg}%</div></div>
+    <div class="stat"><div class="k">Договоров</div><div class="v">${cTotal}<small> · ${cRem} ост.</small></div></div>
+    <div class="stat"><div class="k">Отработано</div><div class="v" style="color:var(--accent)">${cPct}%</div></div>
+    <div class="stat"><div class="k">Приоритеты</div><div class="v" style="font-size:15px;line-height:1.7">
+      <span style="color:var(--high)">● ${byPrio.high}</span> &nbsp;
+      <span style="color:var(--med)">● ${byPrio.medium}</span> &nbsp;
+      <span style="color:var(--low)">● ${byPrio.low}</span>
+    </div></div>
+  `;
+}
+
+/* =========================================================
+   КЛИКИ ПО КАЛЕНДАРЮ
+   ========================================================= */
+calendarEl.addEventListener('click', e => {
+  const taskEl = e.target.closest('.task');
+  if(taskEl){
+    const t = state.tasks.find(x => x.id === taskEl.dataset.id);
+    if(t) openTaskModal(t);
+    return;
+  }
+  const dayEl = e.target.closest('.day');
+  if(dayEl) openTaskModal(null, dayEl.dataset.date);
+});
+
+/* =========================================================
+   МОДАЛКА ЗАДАЧИ
+   ========================================================= */
+const fTitle = $('fTitle'), fAsset = $('fAsset'), fDate = $('fDate'),
+      fPriority = $('fPriority'), fAssignee = $('fAssignee'),
+      fTotal = $('fTotal'), fRemaining = $('fRemaining'),
+      fPercent = $('fPercent'), fPercentOut = $('fPercentOut'),
+      fDone = $('fDone'), fDesc = $('fDesc');
+
+function fillAssetSelect(){
+  fAsset.innerHTML = state.assets.map(a =>
+    `<option value="${a.id}">${escapeHtml(a.name)}</option>`).join('');
+  if(state.assets.length === 0){
+    fAsset.innerHTML = '<option value="">— нет активов —</option>';
+  }
+}
+
+function syncPercentField(){
+  const total = Math.max(0, parseInt(fTotal.value,10) || 0);
+  const rem   = Math.max(0, parseInt(fRemaining.value,10) || 0);
+  if(fDone.checked){
+    fPercent.value = 100;
+    fPercent.disabled = true;
+  } else if(total > 0){
+    const p = Math.round(Math.max(0, Math.min(total, total - rem)) / total * 100);
+    fPercent.value = p;
+    fPercent.disabled = true;
+  } else {
+    fPercent.disabled = false;
+  }
+  fPercentOut.textContent = fPercent.value + '%';
+}
+
+[fTotal, fRemaining].forEach(el => el.addEventListener('input', syncPercentField));
+fDone.addEventListener('change', syncPercentField);
+fPercent.addEventListener('input', () => { fPercentOut.textContent = fPercent.value + '%'; });
+
+function openTaskModal(task, dateStr){
+  fillAssetSelect();
+  editingId = task ? task.id : null;
+  $('modalTitle').textContent = task ? 'Редактирование задачи' : 'Новая задача';
+  $('btnDeleteTask').style.display = task ? '' : 'none';
+
+  if(task){
+    $('taskId').value = task.id;
+    fTitle.value = task.title || '';
+    fAsset.value = task.assetId && assetById(task.assetId) ? task.assetId : (state.assets[0] ? state.assets[0].id : '');
+    fDate.value = task.date || todayStr();
+    fPriority.value = task.priority || 'medium';
+    fAssignee.value = task.assignee || '';
+    fTotal.value = task.contractsTotal || 0;
+    fRemaining.value = task.contractsRemaining || 0;
+    fPercent.value = task.percent || 0;
+    fDone.checked = !!task.done;
+    fDesc.value = task.description || '';
+  } else {
+    $('taskId').value = '';
+    fTitle.value = '';
+    fAsset.value = state.assets[0] ? state.assets[0].id : '';
+    fDate.value = dateStr || todayStr();
+    fPriority.value = 'medium';
+    fAssignee.value = '';
+    fTotal.value = 0;
+    fRemaining.value = 0;
+    fPercent.value = 0;
+    fDone.checked = false;
+    fDesc.value = '';
+  }
+  syncPercentField();
+  modal.classList.add('open');
+  setTimeout(() => fTitle.focus(), 80);
+}
+
+function closeModal(){
+  modal.classList.remove('open');
+  editingId = null;
+}
+
+$('btnCancel').onclick = closeModal;
+modal.addEventListener('click', e => { if(e.target === modal) closeModal(); });
+document.addEventListener('keydown', e => { if(e.key === 'Escape' && modal.classList.contains('open')) closeModal(); });
+
+$('taskForm').addEventListener('submit', e => {
+  e.preventDefault();
+  const data = {
+    title: fTitle.value.trim(),
+    assetId: fAsset.value,
+    date: fDate.value || todayStr(),
+    priority: fPriority.value,
+    assignee: fAssignee.value.trim(),
+    contractsTotal: Math.max(0, parseInt(fTotal.value,10) || 0),
+    contractsRemaining: Math.max(0, parseInt(fRemaining.value,10) || 0),
+    percent: Math.max(0, Math.min(100, parseInt(fPercent.value,10) || 0)),
+    done: fDone.checked,
+    description: fDesc.value.trim()
+  };
+  if(!data.title) return;
+  if(data.contractsRemaining > data.contractsTotal) data.contractsRemaining = data.contractsTotal;
+  if(data.done) data.percent = 100;
+
+  if(editingId){
+    const t = state.tasks.find(x => x.id === editingId);
+    if(t) Object.assign(t, data);
+  } else {
+    state.tasks.push(Object.assign({ id: uid(), createdAt: Date.now() }, data));
+  }
+  save();
+  closeModal();
+  renderCalendar();
+  renderStats();
+});
+
+$('btnDeleteTask').onclick = () => {
+  if(!editingId) return;
+  if(!confirm('Удалить задачу?')) return;
+  state.tasks = state.tasks.filter(t => t.id !== editingId);
+  save();
+  closeModal();
+  renderCalendar();
+  renderStats();
+};
+
+$('btnAddTask').onclick = () => openTaskModal(null, state.ui.anchor);
+
+/* =========================================================
+   ЭКСПОРТ / ИМПОРТ
+   ========================================================= */
+$('btnExport').onclick = () => {
+  const blob = new Blob([JSON.stringify(state, null, 2)], { type:'application/json' });
+  const a = document.createElement('a');
+  a.href = URL.createObjectURL(blob);
+  a.download = `automonitoring-calendar-${todayStr()}.json`;
+  document.body.appendChild(a);
+  a.click();
+  a.remove();
+  URL.revokeObjectURL(a.href);
+};
+
+$('btnImport').onclick = () => $('fileImport').click();
+$('fileImport').addEventListener('change', e => {
+  const file = e.target.files[0];
+  if(!file) return;
+  const reader = new FileReader();
+  reader.onload = () => {
+    try{
+      const data = JSON.parse(reader.result);
+      if(!Array.isArray(data.assets) || !Array.isArray(data.tasks)) throw new Error('Неверный формат файла');
+      if(!confirm('Импорт заменит текущие данные. Продолжить?')) return;
+      const d = defaultState();
+      state = {
+        assets: data.assets,
+        tasks: data.tasks,
+        ui: Object.assign({}, d.ui, data.ui || {})
+      };
+      state.ui.filters = Object.assign({}, d.ui.filters, (data.ui && data.ui.filters) || {});
+      save();
+      renderAll();
+      alert('Данные успешно импортированы.');
+    }catch(err){
+      alert('Ошибка импорта: ' + err.message);
+    }
+  };
+  reader.readAsText(file);
+  e.target.value = '';
+});
+
+/* =========================================================
+   ПРОЧЕЕ
+   ========================================================= */
+function escapeHtml(s){
+  return String(s ?? '').replace(/[&<>"']/g, c => ({
+    '&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'
+  }[c]));
+}
+
+function renderAll(){
+  syncViewButtons();
+  $('dateFrom').value = state.ui.customFrom;
+  $('dateTo').value   = state.ui.customTo;
+  $('filterAsset').value = state.ui.filters.asset || '';
+  $('filterPriority').value = state.ui.filters.priority || '';
+  $('filterStatus').value = state.ui.filters.status || '';
+  $('filterSearch').value = state.ui.filters.search || '';
+
+  renderAssets();
+  renderFilterOptions();
+  renderCalendar();
+  renderStats();
+}
+
+boot();
+</script>
+</body>
+</html>
